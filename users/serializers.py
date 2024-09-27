@@ -131,8 +131,8 @@ class LoginSerializer(TokenObtainPairSerializer):
             raise serializers.ValidationError("User account is disabled.")
         
         user = authenticate(username=username, password=password)
-        attrs = self.user.token()
-        attrs['full_name']=self.user.full_name
+        attrs = user.token()
+        attrs['full_name']=user.full_name
         return attrs
     
 
