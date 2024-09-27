@@ -4,7 +4,8 @@ from .views import ProductCreateAPIView, ProductListAPIView, \
         MaterialListAPIView, MaterialRetrieveUpdateDestroyAPIView,\
             ProductMaterialListAPIView, ProductMaterialCreateAPIView,\
                 ProductMaterialRetrieveUpdateDestroyAPIView, WarehouseCreateAPIView,\
-                    WarehouseListAPIView, WaarehouseRetrieveUpdateDestroyAPIView
+                    WarehouseListAPIView, WaarehouseRetrieveUpdateDestroyAPIView,\
+                        CheckAvailibilityAPIView
                 
 
 
@@ -21,4 +22,5 @@ urlpatterns = [
     path('warehouses/', WarehouseListAPIView.as_view()),
     path('warehouse/create/', WarehouseCreateAPIView.as_view()),
     path('warehouse/detail-update-delete/<int:pk>/', WaarehouseRetrieveUpdateDestroyAPIView.as_view()),
+    path('check-availability/', CheckAvailibilityAPIView.as_view()),
 ]

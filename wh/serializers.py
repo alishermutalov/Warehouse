@@ -72,3 +72,66 @@ class WarehouseSerializer(serializers.ModelSerializer):
         if not material:
             raise ValidationError("Material not found")
         return super().validate(attrs)
+    
+
+class ProductItemSerializer(serializers.Serializer):
+    product_code = serializers.IntegerField()
+    quantity = serializers.IntegerField()
+
+
+class CheckAvailabilitySerializer(serializers.Serializer):
+    products = serializers.ListField(child=ProductItemSerializer())
+    
+    def validate(self, attrs):
+        if type(attrs.get('products'))!=list:
+            raise ValidationError({
+                'message':'Data should be list of products'
+            })
+    
+        data = self.check_availability(attrs['products'])
+        return data
+    
+    def check_availability(self, data):
+        required_materials = []
+        for item in data:
+            if Product.objects.filter(product_code=item['product_code']).exists():
+                product = Product.objects.get(product_code=item['product_code'])
+            else:
+                unmatched_product_code = item.get('product_code')
+                required_materials.append({
+                    'input_code':unmatched_product_code,
+                    'message':'Unmatched product code.'
+                })
+                continue
+            if ProductMaterial.objects.filter(product=product).exists():
+                product_materials = ProductMaterial.objects.filter(product=product)
+                materials = []
+                for product_material in product_materials:
+                    if Warehouse.objects.filter(material=product_material.material).exists():
+                        warehouse_availability = Warehouse.objects.get(material=product_material.material)
+                        materials.append({
+                            'material_name':product_material.material.material_name,
+                            'required_quantity':product_material.quantity,
+                            'available_quantity':warehouse_availability.remainder
+                            })
+                    else:
+                        materials.append({
+                            'material_name':product_material.material.material_name,
+                            'required_quantity':product_material.quantity,
+                            'available_quantity':None
+                            })
+                        
+            required_materials.append({
+                'product_name':product.product_name,
+                'materials':materials
+            })
+        
+        return required_materials
+    
+    
+    
+        
+        
+        
+            
+            
