@@ -93,41 +93,52 @@ class CheckAvailabilitySerializer(serializers.Serializer):
     
     def check_availability(self, data):
         required_materials = []
+        
         for item in data:
             if Product.objects.filter(product_code=item['product_code']).exists():
                 product = Product.objects.get(product_code=item['product_code'])
             else:
                 unmatched_product_code = item.get('product_code')
                 required_materials.append({
-                    'input_code':unmatched_product_code,
-                    'message':'Unmatched product code.'
+                    'input_code': unmatched_product_code,
+                    'message': 'Unmatched product code.'
                 })
                 continue
+            
             if ProductMaterial.objects.filter(product=product).exists():
                 product_materials = ProductMaterial.objects.filter(product=product)
                 materials = []
+                
                 for product_material in product_materials:
-                    if Warehouse.objects.filter(material=product_material.material).exists():
-                        warehouse_availability = Warehouse.objects.get(material=product_material.material)
-                        materials.append({
-                            'material_name':product_material.material.material_name,
-                            'required_quantity':product_material.quantity,
-                            'available_quantity':warehouse_availability.remainder
-                            })
+                    warehouse_entries = Warehouse.objects.filter(material=product_material.material)
+                    
+                    total_available_quantity = sum(entry.remainder for entry in warehouse_entries)
+
+                    required_quantity = product_material.quantity
+                    if total_available_quantity >= required_quantity:
+                        status = 'Enough'
+                        shortage = 0
                     else:
-                        materials.append({
-                            'material_name':product_material.material.material_name,
-                            'required_quantity':product_material.quantity,
-                            'available_quantity':None
-                            })
-                        
+                        status = 'Not enough'
+                        shortage = required_quantity - total_available_quantity
+                    
+                    materials.append({
+                        'material_name': product_material.material.material_name,
+                        'required_quantity': required_quantity,
+                        'available_quantity': total_available_quantity,
+                        'status': status,
+                        'shortage': shortage if shortage > 0 else None
+                    })
+            
+           
             required_materials.append({
-                'product_name':product.product_name,
-                'materials':materials
+                'product_name': product.product_name,
+                'materials': materials
             })
         
         return required_materials
-    
+
+        
     
     
         
