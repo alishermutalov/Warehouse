@@ -114,7 +114,7 @@ class CheckAvailabilitySerializer(serializers.Serializer):
                     
                     total_available_quantity = sum(entry.remainder for entry in warehouse_entries)
 
-                    required_quantity = product_material.quantity
+                    required_quantity = product_material.quantity*item['quantity']
                     if total_available_quantity >= required_quantity:
                         status = 'Enough'
                         shortage = 0
@@ -139,10 +139,108 @@ class CheckAvailabilitySerializer(serializers.Serializer):
         return required_materials
 
         
+class MaterialBatchTrackingSerializer(serializers.Serializer):
+    products = serializers.ListField(child=ProductItemSerializer())
     
+    def validate(self, attrs):
+        if type(attrs.get('products'))!=list:
+            raise ValidationError({
+                'message':'Data should be list of products'
+            })
     
+        data = self.check_availability(attrs['products'])
+        return data
+    
+    def check_availability(self, data):
+        required_materials = []
+        warehouse_materials = Warehouse.objects.all()
+        warehouse_materials_count = {}
+        for warehouse_item in warehouse_materials:
+            if warehouse_materials_count.get(warehouse_item.material.material_name) is not None:
+                warehouse_materials_count[warehouse_item.material.material_name]+= warehouse_item.remainder
+            else:
+                warehouse_materials_count[warehouse_item.material.material_name] = warehouse_item.remainder
         
         
-        
+        for item in data:
+            if Product.objects.filter(product_code=item['product_code']).exists():
+                product = Product.objects.get(product_code=item['product_code'])
+            else:
+                unmatched_product_code = item.get('product_code')
+                required_materials.append({
+                    'input_code': unmatched_product_code,
+                    'message': 'Unmatched product code.'
+                })
+                continue
             
-            
+            if ProductMaterial.objects.filter(product=product).exists():
+                product_materials = ProductMaterial.objects.filter(product=product)
+                materials = []
+                for product_material in product_materials:
+                    total_required_quantity = product_material.quantity*item['quantity']
+                    
+                    warehouse_entries = Warehouse.objects.filter(material=product_material.material)
+                    
+                    wh_material = []
+                    wh_entire_sum=total_required_quantity
+                    for wh_entire in warehouse_entries:
+                        reminder = wh_entire.remainder
+                        if total_required_quantity<= warehouse_materials_count[wh_entire.material.material_name]:
+                            wh_material.append({   
+                                                    'available_quantity':warehouse_materials_count[wh_entire.material.material_name],
+                                                })
+                        
+                            warehouse_materials_count[wh_entire.material.material_name]-=total_required_quantity
+                            print(wh_entire.material.material_name,' - ',warehouse_materials_count[wh_entire.material.material_name])
+                            break
+                        else:
+                            missing_quantity = total_required_quantity-warehouse_materials_count[wh_entire.material.material_name]
+                            wh_material.append({   
+                                                    'available_quantity':warehouse_materials_count[wh_entire.material.material_name],
+                                                    'missing_quantity':missing_quantity
+                                                })
+
+                            warehouse_materials_count[wh_entire.material.material_name]-=warehouse_materials_count[wh_entire.material.material_name]
+                            break
+                    materials.append({
+                        'material_name':product_material.material.material_name,
+                        'material_batches': wh_material,
+                        'required_quantity':total_required_quantity,
+                    })
+                    
+            required_materials.append({
+                'product_name': product.product_name,
+                'materials': materials
+            })
+        
+        return required_materials
+    
+#  print(warehouse_materials_count)
+#                         if warehouse_materials_count[wh_entire.material.material_name] >= total_required_quantity:
+#                             if wh_entire.remainder <= wh_entire_sum:
+                                
+#                                 wh_material.append({   
+#                                             'batch_id':wh_entire.id,
+#                                             'available_quantity':warehouse_materials_count[wh_entire.material.material_name],
+#                                             'batch_quantity':wh_entire.remainder,
+#                                             'price':wh_entire.price,
+#                                             'received':wh_entire.remainder
+#                                         })
+#                                 wh_entire_sum-=wh_entire.remainder
+#                                 warehouse_materials_count[wh_entire.material.material_name]-=wh_entire.remainder
+#                             elif wh_entire.remainder>=wh_entire_sum:
+                                
+#                                 wh_material.append({   
+#                                             'batch_id':wh_entire.id,
+#                                             'available_quantity':warehouse_materials_count[wh_entire.material.material_name],
+#                                             'batch_quantity':wh_entire.remainder,
+#                                             'price':wh_entire.price,
+#                                             'received':wh_entire_sum
+#                                         })
+#                                 warehouse_materials_count[wh_entire.material.material_name]-=wh_entire.remainder
+                            
+#                         else:
+#                             wh_material.append({   
+#                                             'missing':total_required_quantity-warehouse_materials_count[wh_entire.material.material_name]
+#                                         })
+                    

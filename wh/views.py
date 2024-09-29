@@ -5,7 +5,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .serializers import ProductSerializer, MaterialSerializer,\
-    ProductMaterialSerializer, WarehouseSerializer, CheckAvailabilitySerializer
+    ProductMaterialSerializer, WarehouseSerializer, CheckAvailabilitySerializer,\
+        MaterialBatchTrackingSerializer
 from .custom_permissions import IsAdminOrReadOnly
 from .models import Product, ProductMaterial, Material, Warehouse
 
@@ -194,6 +195,18 @@ class CheckAvailibilityAPIView(APIView):
     permission_classes = [permissions.AllowAny,]
     def post(self, request, *args, **kwargs):
         serializer = CheckAvailabilitySerializer(data=request.data)
+        if serializer.is_valid():
+            validated_data = serializer.validated_data
+            return Response({
+                'data':validated_data
+            })
+        return Response(serializer.errors)
+    
+
+class MaterialBatchTrackingAPIView(APIView):
+    permission_classes = [permissions.AllowAny,]
+    def post(self, request, *args, **kwargs):
+        serializer = MaterialBatchTrackingSerializer(data=request.data)
         if serializer.is_valid():
             validated_data = serializer.validated_data
             return Response({
