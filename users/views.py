@@ -61,7 +61,23 @@ class ChangePasswordAPIView(UpdateAPIView):
 
 class LoginAPIView(TokenObtainPairView):
     serializer_class = LoginSerializer
-    
+    def post(self, request, *args, **kwargs):
+        # Call the parent method to generate tokens
+        response = super().post(request, *args, **kwargs)
+        
+        # Check if both 'access' and 'refresh' tokens are in the response
+        if 'access' in response.data:
+            print("Access Token:", response.data['access'])
+        else:
+            print("No Access Token found.")
+        
+        if 'refresh' in response.data:
+            print("Refresh Token:", response.data['refresh'])
+        else:
+            print("No Refresh Token found.")
+        
+        # Return the response as usual
+        return response
 
 class LoginRefreshAPIView(TokenRefreshView):
     serializer_class = RefreshTokenSerializer
@@ -83,3 +99,23 @@ class LogoutAPIView(APIView):
             }, status=205)
         except TokenError:
             return Response(status=400)
+        
+
+class DashboardAPIView(APIView):
+    permission_classes = [IsAuthenticated,]
+    
+    def get(self, request):
+        user = request.user
+        user_info = {
+            'username': user.username,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'email': user.email,
+            'role': user.role, 
+        }
+        
+        
+        return Response({
+            'user_info': user_info,
+            'message': 'Dashboard data fetched successfully.'
+        })

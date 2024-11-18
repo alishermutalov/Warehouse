@@ -7,7 +7,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.generics import get_object_or_404
 
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer,  TokenRefreshSerializer
-from rest_framework_simplejwt.tokens import AccessToken
+from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 from .models import User
 
 class UserSerializer(serializers.ModelSerializer):
@@ -118,23 +118,26 @@ class ChangePasswordSerializer(serializers.Serializer):
 class LoginSerializer(TokenObtainPairSerializer):
     username = serializers.CharField(required=True)
     password = serializers.CharField(required=True, write_only=True)
-    
+
     def validate(self, attrs):
         username = attrs.get('username')
         password = attrs.get('password')
-
         user = User.objects.filter(username=username).first()
         if user is None or not user.check_password(password):
             raise serializers.ValidationError("Invalid username or password.")
-
+        
         if not user.is_active:
             raise serializers.ValidationError("User account is disabled.")
-        
+
         user = authenticate(username=username, password=password)
-        attrs = user.token()
-        attrs['full_name']=user.full_name
-        return attrs
-    
+        refresh = RefreshToken.for_user(user)
+        response_data = {
+            'access': str(refresh.access_token),
+            'refresh': str(refresh),
+            'full_name': user.full_name,
+        }
+
+        return response_data
 
 class RefreshTokenSerializer(TokenRefreshSerializer):
     def validate(self, attrs: Dict[str, Any]) -> Dict[str, str]:
