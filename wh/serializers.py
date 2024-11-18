@@ -33,7 +33,7 @@ class ProductMaterialSerializer(serializers.ModelSerializer):
         
         if not product or not material:
             raise NotFound("Product or Material not found!")
-        return attrs
+        return super().validate(attrs)
     
     def update(self, instance, validated_data):
         instance.product = validated_data.get('product')
