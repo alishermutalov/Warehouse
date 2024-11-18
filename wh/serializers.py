@@ -33,7 +33,7 @@ class ProductMaterialSerializer(serializers.ModelSerializer):
         
         if not product or not material:
             raise NotFound("Product or Material not found!")
-        return attrs
+        return super().validate(attrs)
     
     def update(self, instance, validated_data):
         instance.product = validated_data.get('product')
@@ -191,7 +191,6 @@ class MaterialBatchTrackingSerializer(serializers.Serializer):
                                                 })
                         
                             warehouse_materials_count[wh_entire.material.material_name]-=total_required_quantity
-                            print(wh_entire.material.material_name,' - ',warehouse_materials_count[wh_entire.material.material_name])
                             break
                         else:
                             missing_quantity = total_required_quantity-warehouse_materials_count[wh_entire.material.material_name]
@@ -215,32 +214,3 @@ class MaterialBatchTrackingSerializer(serializers.Serializer):
         
         return required_materials
     
-#  print(warehouse_materials_count)
-#                         if warehouse_materials_count[wh_entire.material.material_name] >= total_required_quantity:
-#                             if wh_entire.remainder <= wh_entire_sum:
-                                
-#                                 wh_material.append({   
-#                                             'batch_id':wh_entire.id,
-#                                             'available_quantity':warehouse_materials_count[wh_entire.material.material_name],
-#                                             'batch_quantity':wh_entire.remainder,
-#                                             'price':wh_entire.price,
-#                                             'received':wh_entire.remainder
-#                                         })
-#                                 wh_entire_sum-=wh_entire.remainder
-#                                 warehouse_materials_count[wh_entire.material.material_name]-=wh_entire.remainder
-#                             elif wh_entire.remainder>=wh_entire_sum:
-                                
-#                                 wh_material.append({   
-#                                             'batch_id':wh_entire.id,
-#                                             'available_quantity':warehouse_materials_count[wh_entire.material.material_name],
-#                                             'batch_quantity':wh_entire.remainder,
-#                                             'price':wh_entire.price,
-#                                             'received':wh_entire_sum
-#                                         })
-#                                 warehouse_materials_count[wh_entire.material.material_name]-=wh_entire.remainder
-                            
-#                         else:
-#                             wh_material.append({   
-#                                             'missing':total_required_quantity-warehouse_materials_count[wh_entire.material.material_name]
-#                                         })
-                    
