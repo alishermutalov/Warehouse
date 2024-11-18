@@ -191,7 +191,6 @@ class MaterialBatchTrackingSerializer(serializers.Serializer):
                                                 })
                         
                             warehouse_materials_count[wh_entire.material.material_name]-=total_required_quantity
-                            print(wh_entire.material.material_name,' - ',warehouse_materials_count[wh_entire.material.material_name])
                             break
                         else:
                             missing_quantity = total_required_quantity-warehouse_materials_count[wh_entire.material.material_name]
